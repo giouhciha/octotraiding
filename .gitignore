@@ -1,0 +1,22 @@
+# Entorno virtual de Python
+.venv/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Datos descargados (se regeneran)
+data_cache/
+
+# Resultados de backtest
+backtest/out/
+
+# Entorno
+.env
+
+# Editores / sistema
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

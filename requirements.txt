@@ -1,0 +1,4 @@
+# Dependencias del motor de análisis y backtesting (fase 1)
+pandas>=2.2
+numpy>=1.26
+requests>=2.31
