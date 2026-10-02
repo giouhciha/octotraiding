@@ -7,11 +7,13 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.octotraiding.app.data.Assets
+import com.octotraiding.app.data.BinanceApi
 import com.octotraiding.app.data.Detail
 import com.octotraiding.app.data.EventItem
 import com.octotraiding.app.data.ReportItem
 import com.octotraiding.app.data.Settings
 import com.octotraiding.app.data.Store
+import com.octotraiding.app.engine.Candle
 import com.octotraiding.app.engine.Position
 import com.octotraiding.app.logic.Monitor
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +36,7 @@ data class AppState(
     val exitSignaled: Boolean = false,
     val reports: List<ReportItem> = emptyList(),
     val events: List<EventItem> = emptyList(),
+    val candles: List<Candle> = emptyList(),
     val busy: Boolean = false,
     val message: String? = null,
 )
@@ -68,11 +71,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val data = withContext(Dispatchers.IO) {
             Triple(Store.settings(app), Store.detail(app), Store.position(app))
         }
-        val reports = withContext(Dispatchers.IO) { Store.reports(app) }
+        val reportList = withContext(Dispatchers.IO) { Store.reports(app) }
         val events = withContext(Dispatchers.IO) { Store.events(app) }
         val settings = data.first
         val detail = data.second
         val position = data.third
+        val candles = withContext(Dispatchers.IO) {
+            runCatching { BinanceApi.fetchKlines(settings.symbol, settings.interval, 90) }.getOrDefault(emptyList())
+        }
         val (action, hint) = computeAction(detail, position)
         state = state.copy(
             symbol = settings.symbol,
@@ -88,8 +94,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             hint = hint,
             holding = position != null,
             exitSignaled = position?.exitSignaled == true,
-            reports = reports,
+            reports = reportList,
             events = events,
+            candles = candles,
         )
     }
 

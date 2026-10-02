@@ -72,6 +72,14 @@ fun OctoApp(vm: AppViewModel) {
                     contentPadding = PaddingValues(bottom = 104.dp),
                 ) {
                     item { HeroCard(state, onBuy = { vm.buy() }, onSell = { vm.sell() }) }
+                    item {
+                        PriceChart(
+                            symbol = state.symbol,
+                            candles = state.candles,
+                            position = state.position,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
                     if (state.holding || state.detail?.signal?.contains("COMPRA") == true) {
                         item { LevelsCard(state) }
                     }
