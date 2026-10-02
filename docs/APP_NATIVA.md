@@ -88,6 +88,12 @@ $env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
 
 ---
 
+## 4.1 Versionado
+
+La versión vive en `android/version.properties` (`versionCode` y `versionName`) y
+se muestra al pie de la app. **Se incrementa en cada compilación.** El APK sale
+con el número en el nombre: `octotraiding-vX.Y.Z.apk`.
+
 ## 5. Cómo compilar el APK
 
 ```powershell

@@ -92,6 +92,7 @@ fun OctoApp(vm: AppViewModel) {
                     }
                     item { HistoryCard(state) }
                     item { EventsCard(state) }
+                    item { Footer() }
                 }
             }
 
@@ -297,6 +298,17 @@ private fun EventsCard(state: AppState) {
                 HorizontalDivider(color = Line, thickness = 1.dp)
             }
         }
+    }
+}
+
+@Composable
+private fun Footer() {
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("OctoTrading v${com.octotraiding.app.BuildConfig.VERSION_NAME}", color = Muted, fontSize = 12.sp)
+        Text("Análisis técnico automatizado · no es asesoramiento financiero", color = Color(0xFF4A5771), fontSize = 10.sp)
     }
 }
 
