@@ -39,6 +39,7 @@ data class AppState(
     val reports: List<ReportItem> = emptyList(),
     val events: List<EventItem> = emptyList(),
     val candles: List<Candle> = emptyList(),
+    val widgetTransparent: Boolean = false,
     val busy: Boolean = false,
     val message: String? = null,
 )
@@ -98,6 +99,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val candles = withContext(Dispatchers.IO) {
             runCatching { BinanceApi.fetchKlines(settings.symbol, settings.interval, 90) }.getOrDefault(emptyList())
         }
+        val widgetTransparent = withContext(Dispatchers.IO) { Store.widgetTransparent(app) }
         val (action, hint) = Actions.compute(detail, position)
         state = state.copy(
             symbol = settings.symbol,
@@ -116,6 +118,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             reports = reportList,
             events = events,
             candles = candles,
+            widgetTransparent = widgetTransparent,
         )
     }
 
@@ -177,6 +180,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             load()
             state = state.copy(message = "Ajustes guardados.")
+        }
+    }
+
+    fun setWidgetTransparent(value: Boolean) {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            withContext(Dispatchers.IO) {
+                Store.setWidgetTransparent(app, value)
+                OctoWidgetProvider.refresh(app)
+            }
+            load()
+            state = state.copy(message = if (value) "Widget transparente." else "Widget sólido.")
         }
     }
 

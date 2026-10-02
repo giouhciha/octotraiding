@@ -116,6 +116,7 @@ fun OctoApp(vm: AppViewModel) {
                     PowerSetup.requestExactAlarm(context)
                     PowerSetup.requestBatteryExemption(context)
                 },
+                onWidgetTransparent = { vm.setWidgetTransparent(it) },
                 onClose = { showSettings = false },
             )
         }
@@ -371,6 +372,7 @@ private fun SettingsDialog(
     state: AppState,
     onSave: (Double, Double, Int, Int, String) -> Unit,
     onReliability: () -> Unit,
+    onWidgetTransparent: (Boolean) -> Unit,
     onClose: () -> Unit,
 ) {
     var capital by remember { mutableStateOf(state.capital.toInt().toString()) }
@@ -420,6 +422,16 @@ private fun SettingsDialog(
                     "Permite alarmas exactas y quitar la optimización de batería, para que los avisos lleguen a tiempo.",
                     color = Muted, fontSize = 11.sp,
                 )
+                Spacer(Modifier.height(14.dp))
+                Text("WIDGET", color = Muted, fontSize = 12.sp)
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Fondo transparente", color = TextCol)
+                    Switch(checked = state.widgetTransparent, onCheckedChange = onWidgetTransparent)
+                }
             }
         },
     )

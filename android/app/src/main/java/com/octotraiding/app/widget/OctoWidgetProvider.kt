@@ -37,6 +37,13 @@ class OctoWidgetProvider : AppWidgetProvider() {
             val position = Store.position(context)
             val (action, _) = Actions.compute(detail, position)
 
+            // Fondo: sólido o transparente (según Ajustes).
+            if (Store.widgetTransparent(context)) {
+                views.setInt(R.id.widget_root, "setBackgroundResource", android.R.color.transparent)
+            } else {
+                views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.widget_bg)
+            }
+
             views.setTextViewText(R.id.widget_symbol, settings.symbol)
             if (detail != null) {
                 views.setTextViewText(R.id.widget_price, money(detail.price))
