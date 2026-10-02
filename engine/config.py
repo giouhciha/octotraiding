@@ -53,6 +53,16 @@ class RegimeConfig:
 
 
 @dataclass(frozen=True)
+class PolicyConfig:
+    """Cómo se opera: cuándo entrar, cuándo salir, cómo gestionar el stop."""
+
+    entry_signals: tuple[str, ...] = ("COMPRA_FUERTE",)
+    exit_signals: tuple[str, ...] = ("VENTA_FUERTE",)
+    require_htf_up: bool = True   # no comprar contra la tendencia diaria
+    mode: str = "trail"           # 'trail' (stop dinámico) o 'fixed' (objetivo)
+
+
+@dataclass(frozen=True)
 class EngineConfig:
     """Configuración completa del motor."""
 
@@ -60,6 +70,7 @@ class EngineConfig:
     thresholds: Thresholds = field(default_factory=Thresholds)
     risk: RiskConfig = field(default_factory=RiskConfig)
     regime: RegimeConfig = field(default_factory=RegimeConfig)
+    policy: PolicyConfig = field(default_factory=PolicyConfig)
 
     # Ventana de contexto
     lookback_support: int = 50   # velas para calcular soporte/resistencia

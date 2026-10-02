@@ -105,6 +105,81 @@
 ```powershell
 .\.venv\Scripts\python.exe run_backtest.py BTCUSDT 1h 26000
 .\.venv\Scripts\python.exe run_backtest.py ETHUSDT 1h 26000
-.\.venv\Scripts\python.exe experiments.py       # compara variantes
-.\.venv\Scripts\python.exe -m engine.report      # reporte actual de BTC
+.\.venv\Scripts\python.exe validate.py            # varios activos y temporalidades
+.\.venv\Scripts\python.exe walk_forward.py BTCUSDT 1h 26000 8
+.\.venv\Scripts\python.exe experiments.py          # compara variantes
+.\.venv\Scripts\python.exe -m engine.report        # reporte actual de BTC
 ```
+
+---
+
+# Fase 2 — Robustez y política de operación (2026-10-01)
+
+## 7. Validación cruzada (4 activos × 3 temporalidades)
+
+| Symbol | TF | Ops | PF | Retorno | Drawdown | PF futuro |
+|--------|----|-----|----|---------| ---------|-----------|
+| BTC | 1h | 179 | 1.44 | +54% | 9.2% | 3.56 |
+| ETH | 1h | 151 | 1.39 | +46% | 11.5% | 2.88 |
+| SOL | 1h | 175 | 1.02 | +10% | 20.3% | 1.31 |
+| BNB | 1h | 202 | 0.94 | −0.3% | 25.0% | 2.52 |
+| BTC | 4h | 74 | 1.19 | +7% | 7.0% | 1.12 |
+| ETH | 4h | 49 | 2.22 | +37% | 4.2% | 1.13 |
+| SOL | 4h | 70 | 1.19 | +10% | 8.8% | 0.25 |
+| BNB | 4h | 57 | 1.25 | +15% | 9.1% | 1.86 |
+| BTC | 1d | 15 | 3.19 | +14% | 3.6% | 0.22 |
+| ETH | 1d | 14 | 1.08 | +2% | 2.7% | 0.41 |
+| SOL | 1d | 19 | 1.46 | +6% | 5.3% | 1.52 |
+| BNB | 1d | 19 | 1.27 | +4% | 5.3% | 1.89 |
+
+**Conclusión: 11 de 12 combinaciones con PF > 1.0** (PF medio 1.47, futuro 1.56).
+El método **generaliza** a otros activos. Pero es **más fuerte en 1h y menos en
+algunas altcoins** (BNB 1h apenas empató, con drawdown alto). En 1d hay pocas
+operaciones → poca confianza estadística.
+
+## 8. Walk-forward (consistencia en el tiempo)
+
+Se partió el histórico en 8 tramos consecutivos e independientes:
+
+| Serie | Tramos con ganancia | PF medio | Retorno medio/tramo |
+|-------|--------------------:|---------:|--------------------:|
+| BTC 1h | 6 / 8 (75%) | 1.56 | +5.4% |
+| ETH 1h | 5 / 8 (62%) | 1.46 | +5.2% |
+| BTC 4h | 5 / 7 (71%) | 1.13 | +0.8% |
+
+**Conclusión:** gana en la **mayoría** de los tramos, pero **no en todos** (hay
+tramos perdedores, como cualquier método real). No hay evidencia de que el
+resultado dependa de un único periodo afortunado. La ventaja es real pero modesta.
+
+## 9. Política de operación (implementada)
+
+La gestión hora a hora vive en `engine/policy.py` y es **la misma** que usa el
+backtest y que usará la app (una sola fuente de verdad):
+
+- **Estado:** sin posición (FLAT) o con posición abierta (OPEN).
+- **Entrada:** cuando hay señal **COMPRA FUERTE** y la tendencia diaria no es
+  bajista.
+- **Gestión:** cada hora, el **stop dinámico** sube a `máximo − 3×ATR` (nunca baja).
+- **Salida:** si el precio toca el stop, o aparece una **VENTA FUERTE**.
+
+**Eventos** que genera (se convertirán en notificaciones):
+
+| Evento | Cuándo | Mensaje al usuario |
+|--------|--------|--------------------|
+| `OPEN` | Se abre la compra | "Entrar. Stop en $X, objetivo $Y." |
+| `TRAIL_STOP_SUBIO` | El stop sube | "Tu stop subió a $X (proteges ganancia)." |
+| `CLOSE` | Se cierra | "Salir en $X. Motivo: stop / ganancia / señal." |
+
+## 10. Veredicto de la Fase 2
+
+- ✅ Motor **validado**: generaliza a 4 activos y 3 temporalidades; gana en 62–75%
+  de los periodos; bajo drawdown.
+- ✅ **Lógica compartida** entre backtest y app (no se pueden desincronizar).
+- ✅ **Política de operación** definida y con eventos de notificación.
+- ⚠️ Ventaja **modesta**, no espectacular. **No supera** a comprar-y-aguantar en
+  subidas fuertes; su valor es **proteger el capital**.
+- ⚠️ Algunas combinaciones (BNB 1h, SOL 4h) son débiles → conviene elegir bien el
+  activo y la temporalidad por defecto (1h en BTC/ETH es lo más sólido).
+
+**Siguiente:** construir la app Android (Flutter), las notificaciones (FCM) y la
+nube, usando esta política ya validada.

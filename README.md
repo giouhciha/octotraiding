@@ -9,15 +9,17 @@ o vender.
 
 ## Estado actual
 
-**Fase 1 completada — el motor de análisis ("el cerebro") está construido y
-validado con backtesting.**
+**Fase 1 y Fase 2 completadas — el motor de análisis ("el cerebro") está
+construido, validado y con política de operación.**
 
 - Indicadores técnicos (EMA, RSI, MACD, ADX, Bollinger, ATR, Stochastic, OBV).
 - Detección de **régimen** (tendencia vs lateral).
 - **Score** de −10 a +10 → señal COMPRA / MANTENER / VENDER.
 - **Niveles de riesgo** (entrada, stop dinámico, objetivo, R:R, tamaño de posición).
 - **Reporte** en lenguaje llano.
-- **Backtesting** con 3 años de datos reales (BTC y ETH).
+- **Backtesting** con 3 años de datos reales (BTC, ETH, SOL, BNB).
+- **Validación cruzada** (4 activos × 3 temporalidades) y **walk-forward**.
+- **Política de operación** compartida entre backtest y app (`engine/policy.py`).
 
 Resultados: ver [`docs/BACKTEST_RESULTS.md`](docs/BACKTEST_RESULTS.md).
 
@@ -33,14 +35,17 @@ Resultados: ver [`docs/BACKTEST_RESULTS.md`](docs/BACKTEST_RESULTS.md).
 
 ```
 engine/            Motor de análisis
-  config.py        Parámetros (pesos, umbrales, riesgo) en un solo lugar
+  config.py        Parámetros (pesos, umbrales, riesgo, política) en un solo lugar
   data.py          Descarga de velas desde Binance
   indicators.py    Indicadores técnicos
   features.py      Features + régimen + contexto diario
   model.py         Score, señal y niveles de riesgo
+  policy.py        Política de operación (entrada, stop dinámico, salida)
   report.py        Reporte para el usuario (lenguaje llano)
 backtest/          Simulador histórico
 run_backtest.py    Informe de backtest de un activo
+validate.py        Validación cruzada (activos x temporalidades)
+walk_forward.py    Consistencia por tramos de tiempo
 experiments.py     Comparación de variantes (laboratorio)
 ```
 
@@ -58,14 +63,17 @@ python -m venv .venv
 .\.venv\Scripts\python.exe run_backtest.py BTCUSDT 1h 26000
 .\.venv\Scripts\python.exe run_backtest.py ETHUSDT 1h 26000
 
-# 4) Comparar variantes del motor
+# 4) Validación cruzada y walk-forward
+.\.venv\Scripts\python.exe validate.py
+.\.venv\Scripts\python.exe walk_forward.py BTCUSDT 1h 26000 8
+
+# 5) Comparar variantes del motor
 .\.venv\Scripts\python.exe experiments.py
 ```
 
 ## Próximos pasos
 
-1. Validar en más activos y temporalidades.
-2. Política de operación (posición abierta + stop dinámico hora a hora).
-3. App Android (Flutter) + notificaciones push (FCM).
-4. Reporte con IA (LLM) sobre el JSON estructurado.
-5. Nube (serverless en AWS).
+1. App Android (Flutter) + notificaciones push (FCM).
+2. Reporte con IA (LLM) sobre el JSON estructurado.
+3. Nube (serverless en AWS) con el job horario.
+4. Publicación y disclaimers legales.

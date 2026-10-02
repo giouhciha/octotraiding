@@ -218,6 +218,11 @@ aplicará y notificará:
 > Importante: el stop dinámico **debe actualizarse cada hora**. La app lleva la
 > cuenta de la posición abierta y avisa cuando el stop sube o se activa.
 
+**Implementación:** `engine/policy.py` (misma lógica para backtest y app).
+**Validación (Fase 2):** probado en 4 activos × 3 temporalidades (11/12 con PF>1)
+y walk-forward (gana en 62–75% de los tramos). Detalle en
+[`docs/BACKTEST_RESULTS.md`](./BACKTEST_RESULTS.md).
+
 ---
 
 ## 9. El reporte (cómo se lo explica al usuario)

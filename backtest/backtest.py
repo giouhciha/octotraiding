@@ -11,12 +11,12 @@ Métricas honestas: no basta con 'acertar'; importa el riesgo.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
 
-from engine.model import COMPRA_FUERTE, VENTA_FUERTE
+from engine.config import DEFAULT_CONFIG, EngineConfig
+from engine.policy import step
 
 FEE_PER_SIDE = 0.001  # 0.1%
 
@@ -65,23 +65,12 @@ class BacktestResult:
 
 def run_backtest(
     scored: pd.DataFrame,
+    cfg: EngineConfig = DEFAULT_CONFIG,
     fee: float = FEE_PER_SIDE,
-    exit_signals: tuple[str, ...] = (VENTA_FUERTE,),
-    mode: str = "trail",
-    trail_mult: float = 3.0,
-    entry_signals: tuple[str, ...] = (COMPRA_FUERTE,),
-    require_htf_up: bool = True,
 ) -> BacktestResult:
     """
-    Recorre las velas y simula las operaciones.
-
-    Estrategia validada por backtesting (perfil moderado):
-    - Entrar solo con señal FUERTE de compra, y solo si la tendencia diaria no
-      es bajista (no se compra 'contra corriente').
-    - Salir con stop dinámico que sube con el precio, o con señal de venta fuerte.
-
-    mode='fixed' : sale por stop, por objetivo o por señal de venta.
-    mode='trail' : stop dinámico que sube con el precio (deja correr ganancias).
+    Simula el histórico usando EXACTAMENTE la misma política que la app en vivo
+    (engine.policy.step). Así el backtest y la producción no se pueden separar.
     """
     trades: list[dict] = []
     position = None
@@ -92,72 +81,30 @@ def run_backtest(
         row = scored.iloc[i]
         prev = scored.iloc[i - 1]
 
-        if position is None:
-            # Entrar en la apertura de esta vela si la vela ANTERIOR cumplió.
-            htf_ok = (not require_htf_up) or float(prev["htf_ctx"]) >= 0
-            if prev["signal"] in entry_signals and htf_ok:
-                entry = float(row["open"])
-                stop = float(prev["stop"])
-                target = float(prev["target"])
-                if np.isfinite(entry) and np.isfinite(stop) and np.isfinite(target):
-                    if stop < entry and (mode == "trail" or entry < target):
-                        position = {
-                            "entry_time": row.name,
-                            "entry": entry,
-                            "stop": stop,
-                            "initial_stop": stop,
-                            "target": target,
-                            "position_pct": float(prev["position_pct"]),
-                            "bars": 0,
-                            "high_since": entry,
-                        }
-        else:
-            position["bars"] += 1
-            exit_price, reason = None, None
+        closed = position
+        new_position, events = step(prev, row, position, cfg)
 
-            # 1) Señal de venta en la vela anterior -> salir en la apertura.
-            if prev["signal"] in exit_signals:
-                exit_price, reason = float(row["open"]), "SENAL_VENTA"
-            # 2) Stop (con el valor vigente ANTES de actualizarlo con esta vela).
-            elif float(row["low"]) <= position["stop"]:
-                exit_price = position["stop"]
-                if mode == "trail" and exit_price > position["entry"]:
-                    reason = "STOP_DINAMICO_GANANCIA"
-                else:
-                    reason = "STOP"
-            # 3) Objetivo (solo en modo 'fixed').
-            elif mode == "fixed" and float(row["high"]) >= position["target"]:
-                exit_price, reason = position["target"], "OBJETIVO"
-
-            if exit_price is not None:
-                gross = exit_price / position["entry"] - 1
-                net = gross - 2 * fee
-                risk = position["entry"] - position["initial_stop"]
-                r_mult = (exit_price - position["entry"]) / risk if risk > 0 else 0.0
-                equity *= 1 + position["position_pct"] * net
+        for ev in events:
+            if ev["type"] == "CLOSE" and closed is not None:
+                net = ev["return"] - 2 * fee
+                risk = closed.entry - closed.initial_stop
+                r_mult = (ev["price"] - closed.entry) / risk if risk > 0 else 0.0
+                equity *= 1 + closed.position_pct * net
                 trades.append(
                     {
-                        "entry_time": position["entry_time"],
-                        "exit_time": row.name,
-                        "entry": position["entry"],
-                        "exit": exit_price,
-                        "reason": reason,
-                        "gross_return": gross,
+                        "entry_time": closed.entry_time,
+                        "exit_time": ev["time"],
+                        "entry": closed.entry,
+                        "exit": ev["price"],
+                        "reason": ev["reason"],
+                        "gross_return": ev["return"],
                         "net_return": net,
                         "r_multiple": r_mult,
-                        "bars_held": position["bars"],
+                        "bars_held": closed.bars_held,
                     }
                 )
-                position = None
-            else:
-                # Actualizar stop dinámico SOLO al final de la vela (sin mirar el futuro).
-                position["high_since"] = max(position["high_since"], float(row["high"]))
-                if mode == "trail":
-                    atr = float(row["atr14"])
-                    if np.isfinite(atr):
-                        new_stop = position["high_since"] - trail_mult * atr
-                        position["stop"] = max(position["stop"], new_stop)
 
+        position = new_position
         equity_points.append((row.name, equity))
 
     equity_curve = pd.Series(
