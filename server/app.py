@@ -59,17 +59,56 @@ class SubscribeIn(BaseModel):
     keys: dict
 
 
+class BuyIn(BaseModel):
+    entry_price: float | None = None
+
+
+def _compute_action(latest: dict | None, position: dict | None) -> dict:
+    """Traduce el estado a una acción clara para el usuario."""
+    signal = (latest or {}).get("signal", "")
+    if position:
+        if position.get("exit_signaled"):
+            return {"action": "VENDER", "holding": True, "exit_signaled": True,
+                    "hint": "Tienes posición abierta y hay señal de SALIR. Considera vender y confírmalo."}
+        if signal in ("VENTA", "VENTA FUERTE"):
+            return {"action": "VENDER", "holding": True, "exit_signaled": False,
+                    "hint": "Tienes posición abierta y el método pide salir."}
+        return {"action": "MANTENER", "holding": True, "exit_signaled": False,
+                "hint": "Tienes posición abierta. Mantén según el plan; el stop sube solo."}
+    # Sin posición: nos importa CUÁNDO comprar
+    if signal == "COMPRA FUERTE":
+        return {"action": "COMPRAR", "holding": False, "exit_signaled": False,
+                "hint": "No tienes posición y el método marca una oportunidad de COMPRA."}
+    if signal == "COMPRA":
+        return {"action": "VIGILAR", "holding": False, "exit_signaled": False,
+                "hint": "No tienes posición. Señal tibia: aún no es momento claro."}
+    return {"action": "ESPERAR", "holding": False, "exit_signaled": False,
+            "hint": "No tienes posición. No hay ventaja clara por ahora."}
+
+
 # ---------------------------------------------------------------------------
 # API
 # ---------------------------------------------------------------------------
+@app.get("/health")
+def health() -> dict:
+    return {"status": "ok"}
+
+
 @app.get("/api/state")
 def get_state() -> dict:
     settings = storage.get_settings()
     state = storage.get_state()
+    latest = storage.latest_report()
+    action = _compute_action(latest, state["position"])
     return {
         "settings": settings,
         "position": state["position"],
-        "latest": storage.latest_report(),
+        "latest": latest,
+        "action": action["action"],
+        "holding": action["holding"],
+        "exit_signaled": action["exit_signaled"],
+        "action_hint": action["hint"],
+        "intervals": assets.INTERVALS,
         "server_time": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -96,6 +135,19 @@ def track(payload: TrackIn) -> dict:
 @app.post("/api/settings")
 def update_settings(payload: SettingsIn) -> dict:
     return {"ok": True, "settings": storage.update_settings(**payload.model_dump())}
+
+
+@app.post("/api/position/buy")
+def position_buy(payload: BuyIn) -> dict:
+    """El usuario confirma que compró la moneda."""
+    position = job.register_buy(payload.entry_price)
+    return {"ok": True, "position": position}
+
+
+@app.post("/api/position/sell")
+def position_sell() -> dict:
+    """El usuario confirma que vendió la moneda."""
+    return {"ok": True, **job.register_sell()}
 
 
 @app.get("/api/reports")

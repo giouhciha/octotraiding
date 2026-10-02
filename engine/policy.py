@@ -39,6 +39,7 @@ class Position:
     entry_time: Any
     highest: float        # máximo alcanzado desde la entrada
     bars_held: int = 0
+    exit_signaled: bool = False  # ya se avisó de vender (esperando confirmación)
 
     def to_dict(self) -> dict:
         d = asdict(self)

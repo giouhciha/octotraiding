@@ -1,6 +1,6 @@
 // Service Worker de OctoTrading: caché de la app + recepción de notificaciones.
 
-const CACHE = "octotrading-v1";
+const CACHE = "octotrading-v2";
 const SHELL = [
   "/",
   "/index.html",

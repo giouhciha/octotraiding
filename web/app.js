@@ -33,52 +33,80 @@ function toast(msg) {
 // --- Render ---
 let CURRENT = null;
 
+function actionClass(a) {
+  if (a === "COMPRAR") return "buy";
+  if (a === "VENDER") return "sell";
+  return "hold";
+}
+
 function render(state) {
   CURRENT = state;
   const latest = state.latest;
   const settings = state.settings;
-  const name = state.asset_name || "";
+  const holding = !!state.holding;
+
+  // Insignia = ACCIÓN (depende de si el usuario tiene compra o no)
+  const badge = $("hero-badge");
+  badge.textContent = state.action || "—";
+  badge.className = "badge " + actionClass(state.action);
+
+  // Banner de acción + botón
+  $("action-hint").textContent = state.action_hint || "";
+  const btn = $("btn-position");
+  if (holding) {
+    btn.textContent = state.exit_signaled ? "Ya vendí ✔" : "Ya vendí";
+    btn.classList.toggle("danger", !!state.exit_signaled);
+    btn.dataset.mode = "sell";
+  } else {
+    btn.textContent = "Compré";
+    btn.classList.remove("danger");
+    btn.dataset.mode = "buy";
+  }
 
   if (!latest) {
-    $("hero-badge").textContent = "sin datos";
     $("hero-narrative").textContent = "Aún no hay análisis. Espera el primer ciclo.";
     return;
   }
 
   $("hero-symbol").textContent = latest.symbol;
-  $("hero-name").textContent = name;
+  $("hero-name").textContent = "";
   $("hero-price").textContent = fmtMoney(latest.price);
-
-  const badge = $("hero-badge");
-  badge.textContent = latest.signal;
-  badge.className = "badge " + signalClass(latest.signal);
 
   $("hero-score").textContent = (latest.score >= 0 ? "+" : "") + Number(latest.score).toFixed(2);
   const pct = ((Number(latest.score) + 10) / 20) * 100;
   $("score-fill").style.width = Math.max(2, Math.min(100, pct)) + "%";
   $("hero-narrative").textContent = latest.narrative || "";
 
-  // Chips de contexto
+  // Chips de contexto (señal cruda + contexto)
   const chips = [];
+  chips.push("Señal: " + latest.signal);
   if (latest.regime) chips.push("Régimen: " + latest.regime);
   if (latest.daily_trend) chips.push("Tendencia diaria: " + latest.daily_trend);
   chips.push("Actualizado: " + shortTime(latest.ts));
   $("hero-chips").innerHTML = chips.map((c) => `<span class="chip">${c}</span>`).join("");
 
-  // Niveles
-  const isBuy = latest.signal.includes("COMPRA");
-  $("levels-card").style.display = isBuy || state.position ? "" : "none";
-  $("lv-entry").textContent = fmtMoney(latest.entry);
-  $("lv-stop").textContent = fmtMoney(latest.stop);
-  $("lv-target").textContent = fmtMoney(latest.target);
-  $("lv-rr").textContent = "1 : " + Number(latest.rr).toFixed(2);
+  // Niveles: si hay posición, los de TU posición; si no, los sugeridos por la señal.
+  let entry, stop, target, rr;
+  if (state.position) {
+    const p = state.position;
+    entry = p.entry; stop = p.stop; target = p.target;
+    rr = (target - entry) / (entry - stop);
+  } else {
+    entry = latest.entry; stop = latest.stop; target = latest.target; rr = latest.rr;
+  }
+  const showLevels = holding || latest.signal.includes("COMPRA");
+  $("levels-card").style.display = showLevels ? "" : "none";
+  $("lv-entry").textContent = fmtMoney(entry);
+  $("lv-stop").textContent = fmtMoney(stop);
+  $("lv-target").textContent = fmtMoney(target);
+  $("lv-rr").textContent = "1 : " + Number(rr).toFixed(2);
 
   const capital = Number(settings.capital) || 0;
   if (state.position) {
     const p = state.position;
     $("lv-position").innerHTML =
-      `Posición abierta a <b>${fmtMoney(p.entry)}</b> · stop actual <b>${fmtMoney(p.stop)}</b>.`;
-  } else if (capital > 0 && isBuy) {
+      `Tienes posición desde <b>${fmtMoney(p.entry)}</b> · stop actual <b>${fmtMoney(p.stop)}</b>.`;
+  } else if (capital > 0 && latest.signal.includes("COMPRA")) {
     const amount = capital * Number(latest.position_pct);
     $("lv-position").innerHTML =
       `Con ${fmtMoney(capital)} y riesgo ${(settings.risk_pct * 100).toFixed(1)}% → compra sugerida de <b>${fmtMoney(amount)}</b>.`;
@@ -168,6 +196,29 @@ function openSettings() {
   $("dlg-settings").showModal();
 }
 
+async function togglePosition() {
+  const btn = $("btn-position");
+  const mode = btn.dataset.mode;
+  btn.disabled = true;
+  try {
+    if (mode === "sell") {
+      await api("/api/position/sell", { method: "POST" });
+      toast("Venta registrada. Estás fuera del mercado.");
+    } else {
+      await api("/api/position/buy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      toast("Compra registrada. La app vigilará tu salida.");
+    }
+    await loadAll();
+  } catch (_) {
+    toast("No se pudo registrar la operación");
+  }
+  btn.disabled = false;
+}
+
 async function saveSettings() {
   await api("/api/settings", {
     method: "POST",
@@ -220,6 +271,7 @@ async function enableNotifications() {
 function bind() {
   $("btn-change").addEventListener("click", openChange);
   $("btn-settings").addEventListener("click", openSettings);
+  $("btn-position").addEventListener("click", togglePosition);
   $("btn-save-settings").addEventListener("click", saveSettings);
   $("btn-notify").addEventListener("click", enableNotifications);
   $("btn-test-push").addEventListener("click", async () => {

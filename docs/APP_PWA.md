@@ -84,6 +84,8 @@ Ejecutar un ciclo de análisis manualmente (para probar sin esperar la hora):
 | GET | `/api/assets?q=` | Buscar activos |
 | POST | `/api/track` | Cambiar el activo seguido |
 | POST | `/api/settings` | Guardar capital, riesgo, temporalidad, silencio |
+| POST | `/api/position/buy` | Registrar que el usuario compró |
+| POST | `/api/position/sell` | Registrar que el usuario vendió |
 | GET | `/api/reports?limit=` | Historial de reportes |
 | GET | `/api/events?limit=` | Alertas emitidas |
 | GET | `/api/push/public-key` | Clave pública VAPID para suscribirse |
@@ -93,15 +95,30 @@ Ejecutar un ciclo de análisis manualmente (para probar sin esperar la hora):
 
 ---
 
-## 6. Notificaciones (qué se avisa)
+## 6. Notificaciones y estado del usuario (compra / venta)
 
-Se avisa **solo** cuando ocurre algo relevante (no cada hora):
+La app **pregunta al usuario si tiene la moneda o no**, y cambia el objetivo
+según eso:
 
-| Evento | Mensaje |
-|--------|---------|
-| `OPEN` | "Comprar BTCUSDT: entrada $X · stop $Y · objetivo $Z" |
-| `TRAIL_STOP_SUBIO` | "Stop subido a $X. Estás protegiendo ganancia." |
-| `CLOSE` | "Salir en $X (+n%). Motivo: …" |
+| Estado del usuario | Qué hace la app | Mensajes |
+|--------------------|-----------------|----------|
+| **No tiene** (sin posición) | Busca **cuándo comprar** | "Momento de comprar…" (al aparecer COMPRA FUERTE) |
+| **Tiene** (posición abierta) | Busca **cuándo vender** | "Sube tu stop…", "Vender…" |
+
+- El usuario confirma con el botón **"Compré"** (registra su compra) y **"Ya vendí"**
+  (cierra la posición). También se puede indicar el precio de compra.
+- La insignia de acción cambia: **COMPRAR / VIGILAR / ESPERAR** si no tiene;
+  **MANTENER / VENDER** si tiene.
+- Al registrar una compra, la app calcula su **stop** y **objetivo** y los vigila
+  cada hora (stop dinámico).
+
+**Reglas (sin spam):**
+
+| Evento | Cuándo |
+|--------|--------|
+| `OPEN` (comprar) | Transición a COMPRA FUERTE sin tener posición |
+| `TRAIL_STOP_SUBIO` | El stop sube con el precio (tiene posición) |
+| `CLOSE` (vender) | Toca el stop o aparece VENTA FUERTE |
 
 Se respeta el **horario de silencio** (por defecto 23:00–07:00). Las horas se
 comparan en **UTC** por ahora; se ajustará a la zona horaria del usuario.

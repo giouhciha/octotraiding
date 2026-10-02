@@ -179,7 +179,9 @@ def score_market(features: pd.DataFrame, cfg: EngineConfig = DEFAULT_CONFIG) -> 
     signal = signal.where(~(signal.isin([COMPRA, COMPRA_FUERTE]) & ~buy_ok), ESPERAR)
     signal = signal.where(~atr_spike, ESPERAR)
 
-    out = features[["close", "open", "high", "low", "atr14", "regime", "htf_ctx"]].copy()
+    out = features[
+        ["close", "open", "high", "low", "atr14", "regime", "htf_ctx", "resistance", "support"]
+    ].copy()
     out = out.join(factors)
     out["score"] = score
     out["signal"] = signal

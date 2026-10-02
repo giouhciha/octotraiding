@@ -2,7 +2,7 @@
 Arranca el servidor de OctoTrading (API + app PWA + job horario).
 
 Uso:
-    .\.venv\Scripts\python.exe run_server.py
+    .venv\\Scripts\\python.exe run_server.py
 Luego abre:  http://127.0.0.1:8000
 """
 
