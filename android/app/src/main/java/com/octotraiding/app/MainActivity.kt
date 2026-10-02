@@ -36,6 +36,12 @@ class MainActivity : ComponentActivity() {
         setContent { OctoApp(vm) }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Al volver a la app, refrescamos: así se refleja lo que pasó en segundo plano.
+        vm.onResume()
+    }
+
     /** Pide (una vez) que Android no duerma la app, para que los avisos lleguen a tiempo. */
     private fun setupReliability() {
         if (!Store.reliabilityAsked(this)) {

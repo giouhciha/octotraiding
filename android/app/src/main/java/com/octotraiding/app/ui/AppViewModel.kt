@@ -46,23 +46,36 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var state by mutableStateOf(AppState())
         private set
 
+    private var running = false
+
     init {
         viewModelScope.launch { load() }
         refresh(runMonitor = true)
     }
 
+    /** Se llama cuando la app vuelve a primer plano: recarga y recalcula. */
+    fun onResume() {
+        refresh(runMonitor = true)
+    }
+
     fun refresh(runMonitor: Boolean = true) {
+        if (running) return
+        running = true
         viewModelScope.launch {
-            state = state.copy(busy = true, message = if (runMonitor) "Analizando el mercado…" else null)
-            val ok = withContext(Dispatchers.IO) {
-                if (!runMonitor) true
-                else runCatching { Monitor.runOnce(getApplication(), allowNotify = true) }.isSuccess
+            try {
+                state = state.copy(busy = true, message = if (runMonitor) "Analizando el mercado…" else null)
+                val ok = withContext(Dispatchers.IO) {
+                    if (!runMonitor) true
+                    else runCatching { Monitor.runOnce(getApplication(), allowNotify = true) }.isSuccess
+                }
+                load()
+                state = state.copy(
+                    busy = false,
+                    message = if (!ok) "No se pudo conectar. Revisa tu internet." else null,
+                )
+            } finally {
+                running = false
             }
-            load()
-            state = state.copy(
-                busy = false,
-                message = if (!ok) "No se pudo conectar. Revisa tu internet." else null,
-            )
         }
     }
 
