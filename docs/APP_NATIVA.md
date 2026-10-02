@@ -17,6 +17,8 @@ Estado: **compila y genera APK** (`octotraiding-debug.apk`).
   - **Sin posición** → busca **cuándo comprar**.
   - **Con posición** → vigila el **stop dinámico** y avisa **cuándo vender**.
 - Notificaciones locales de: oportunidad de compra, subida de stop y venta.
+- **Botones en el encabezado** (Cambiar activo y Ajustes), junto al título.
+- **Widget de pantalla de inicio**: muestra activo, precio y acción; al tocarlo abre la app.
 
 ---
 

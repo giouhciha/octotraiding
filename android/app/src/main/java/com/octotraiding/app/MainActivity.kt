@@ -15,6 +15,7 @@ import com.octotraiding.app.power.AlarmScheduler
 import com.octotraiding.app.power.PowerSetup
 import com.octotraiding.app.ui.AppViewModel
 import com.octotraiding.app.ui.OctoApp
+import com.octotraiding.app.widget.OctoWidgetProvider
 import com.octotraiding.app.work.MonitorWorker
 
 class MainActivity : ComponentActivity() {
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
         Notifier.ensureChannel(this)
         MonitorWorker.schedule(this)
         AlarmScheduler.scheduleNext(this)
+        OctoWidgetProvider.refresh(this)
         requestNotificationPermission()
         setupReliability()
 

@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -66,10 +69,14 @@ fun OctoApp(vm: AppViewModel) {
     MaterialTheme(colorScheme = DarkColors) {
         Box(Modifier.fillMaxSize().background(Bg)) {
             Column(Modifier.fillMaxSize()) {
-                TopBar(state)
+                TopBar(
+                    state,
+                    onChange = { showChange = true },
+                    onSettings = { showSettings = true },
+                )
                 LazyColumn(
                     Modifier.weight(1f),
-                    contentPadding = PaddingValues(bottom = 104.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp),
                 ) {
                     item { HeroCard(state, onBuy = { vm.buy() }, onSell = { vm.sell() }) }
                     item {
@@ -88,14 +95,8 @@ fun OctoApp(vm: AppViewModel) {
                 }
             }
 
-            BottomBar(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                onChange = { showChange = true },
-                onSettings = { showSettings = true },
-            )
-
             state.message?.let {
-                Toast(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 104.dp))
+                Toast(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp))
                 LaunchedEffect(it) {
                     kotlinx.coroutines.delay(2600)
                     vm.clearMessage()
@@ -121,17 +122,26 @@ fun OctoApp(vm: AppViewModel) {
 }
 
 @Composable
-private fun TopBar(state: AppState) {
+private fun TopBar(state: AppState, onChange: () -> Unit, onSettings: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().statusBarsPadding().background(Color(0xE60B1220)).padding(horizontal = 16.dp, vertical = 14.dp),
+        Modifier.fillMaxWidth().statusBarsPadding().background(Color(0xE60B1220))
+            .padding(start = 16.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column {
+        Column(Modifier.weight(1f)) {
             Text("OctoTrading", color = Teal, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             Text("tu analista en el bolsillo", color = Muted, fontSize = 12.sp)
         }
-        if (state.busy) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp, color = Teal)
+        if (state.busy) {
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Teal)
+            Spacer(Modifier.width(6.dp))
+        }
+        IconButton(onClick = onChange) {
+            Icon(Icons.Default.SwapHoriz, contentDescription = "Cambiar activo", tint = Teal)
+        }
+        IconButton(onClick = onSettings) {
+            Icon(Icons.Default.Settings, contentDescription = "Ajustes", tint = Muted)
+        }
     }
 }
 
@@ -301,22 +311,6 @@ private fun Badge(text: String, color: Color) {
 private fun Chip(text: String) {
     Box(Modifier.background(Color(0xFF1A2540), RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 5.dp)) {
         Text(text, color = Muted, fontSize = 12.sp)
-    }
-}
-
-@Composable
-private fun BottomBar(modifier: Modifier, onChange: () -> Unit, onSettings: () -> Unit) {
-    Row(
-        modifier.fillMaxWidth().navigationBarsPadding().background(Color(0xF20B1220)).padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Button(onClick = onChange, modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.buttonColors(containerColor = Teal, contentColor = Color(0xFF05201C))) {
-            Text("Cambiar activo")
-        }
-        OutlinedButton(onClick = onSettings, modifier = Modifier.weight(1f)) {
-            Text("Ajustes")
-        }
     }
 }
 

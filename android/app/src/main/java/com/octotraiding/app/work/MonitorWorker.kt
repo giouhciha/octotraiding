@@ -9,6 +9,7 @@ import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.octotraiding.app.logic.Monitor
+import com.octotraiding.app.widget.OctoWidgetProvider
 import java.util.concurrent.TimeUnit
 
 /** Revisa el mercado cada hora en segundo plano. */
@@ -17,6 +18,7 @@ class MonitorWorker(appContext: Context, params: WorkerParameters) : Worker(appC
     override fun doWork(): Result {
         return try {
             Monitor.runOnce(applicationContext, allowNotify = true)
+            OctoWidgetProvider.refresh(applicationContext)
             Result.success()
         } catch (_: Exception) {
             Result.retry()

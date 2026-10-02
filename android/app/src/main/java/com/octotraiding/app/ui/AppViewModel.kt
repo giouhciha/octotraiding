@@ -15,7 +15,9 @@ import com.octotraiding.app.data.Settings
 import com.octotraiding.app.data.Store
 import com.octotraiding.app.engine.Candle
 import com.octotraiding.app.engine.Position
+import com.octotraiding.app.logic.Actions
 import com.octotraiding.app.logic.Monitor
+import com.octotraiding.app.widget.OctoWidgetProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -64,9 +66,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 state = state.copy(busy = true, message = if (runMonitor) "Analizando el mercado…" else null)
+                val app = getApplication<Application>()
                 val ok = withContext(Dispatchers.IO) {
                     if (!runMonitor) true
-                    else runCatching { Monitor.runOnce(getApplication(), allowNotify = true) }.isSuccess
+                    else runCatching {
+                        Monitor.runOnce(app, allowNotify = true)
+                        OctoWidgetProvider.refresh(app)
+                    }.isSuccess
                 }
                 load()
                 state = state.copy(
@@ -92,7 +98,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val candles = withContext(Dispatchers.IO) {
             runCatching { BinanceApi.fetchKlines(settings.symbol, settings.interval, 90) }.getOrDefault(emptyList())
         }
-        val (action, hint) = computeAction(detail, position)
+        val (action, hint) = Actions.compute(detail, position)
         state = state.copy(
             symbol = settings.symbol,
             assetName = Assets.name(settings.symbol),
@@ -113,24 +119,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    private fun computeAction(detail: Detail?, position: Position?): Pair<String, String> {
-        if (position != null) {
-            return when {
-                position.exitSignaled ->
-                    "VENDER" to "Tienes posición y hay señal de SALIR. Vende y confírmalo."
-                detail?.signal == "VENTA" || detail?.signal == "VENTA_FUERTE" ->
-                    "VENDER" to "Tienes posición y el método pide salir."
-                else ->
-                    "MANTENER" to "Tienes posición. Mantén según el plan; el stop sube solo."
-            }
-        }
-        return when (detail?.signal) {
-            "COMPRA_FUERTE" -> "COMPRAR" to "No tienes posición y hay una oportunidad de COMPRA."
-            "COMPRA" -> "VIGILAR" to "No tienes posición. Señal tibia: aún no es momento claro."
-            else -> "ESPERAR" to "No tienes posición. No hay ventaja clara por ahora."
-        }
-    }
-
     fun selectAsset(symbol: String, interval: String? = null) {
         viewModelScope.launch {
             val app = getApplication<Application>()
@@ -146,7 +134,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun buy() {
         viewModelScope.launch {
             val app = getApplication<Application>()
-            val ok = withContext(Dispatchers.IO) { runCatching { Monitor.registerBuy(app, null) }.getOrDefault(false) }
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    val r = Monitor.registerBuy(app, null)
+                    OctoWidgetProvider.refresh(app)
+                    r
+                }.getOrDefault(false)
+            }
             load()
             state = state.copy(message = if (ok) "Compra registrada. Vigilaremos tu salida." else "No se pudo registrar.")
         }
@@ -155,7 +149,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun sell() {
         viewModelScope.launch {
             val app = getApplication<Application>()
-            withContext(Dispatchers.IO) { Monitor.registerSell(app) }
+            withContext(Dispatchers.IO) {
+                Monitor.registerSell(app)
+                OctoWidgetProvider.refresh(app)
+            }
             load()
             state = state.copy(message = "Venta registrada. Estás fuera del mercado.")
         }

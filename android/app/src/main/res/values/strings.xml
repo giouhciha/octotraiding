@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">OctoTrading</string>
+    <string name="widget_description">Precio y señal del activo que sigues.</string>
 </resources>
