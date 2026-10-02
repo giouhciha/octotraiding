@@ -1,9 +1,12 @@
 package com.octotraiding.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -18,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.octotraiding.app.data.Assets
+import com.octotraiding.app.data.WidgetPalette
 import com.octotraiding.app.engine.Config
 import com.octotraiding.app.power.PowerSetup
 import java.time.Instant
@@ -26,6 +30,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 private val Bg = Color(0xFF0B1220)
 private val Card = Color(0xFF121B2E)
@@ -116,7 +121,8 @@ fun OctoApp(vm: AppViewModel) {
                     PowerSetup.requestExactAlarm(context)
                     PowerSetup.requestBatteryExemption(context)
                 },
-                onWidgetTransparent = { vm.setWidgetTransparent(it) },
+                onWidgetColor = { vm.setWidgetColor(it) },
+                onWidgetOpacity = { vm.setWidgetOpacity(it) },
                 onClose = { showSettings = false },
             )
         }
@@ -372,7 +378,8 @@ private fun SettingsDialog(
     state: AppState,
     onSave: (Double, Double, Int, Int, String) -> Unit,
     onReliability: () -> Unit,
-    onWidgetTransparent: (Boolean) -> Unit,
+    onWidgetColor: (String) -> Unit,
+    onWidgetOpacity: (Int) -> Unit,
     onClose: () -> Unit,
 ) {
     var capital by remember { mutableStateOf(state.capital.toInt().toString()) }
@@ -380,6 +387,7 @@ private fun SettingsDialog(
     var qs by remember { mutableStateOf(state.quietStart.toString()) }
     var qe by remember { mutableStateOf(state.quietEnd.toString()) }
     var interval by remember { mutableStateOf(state.interval) }
+    var transparency by remember { mutableStateOf(100 - state.widgetOpacity) }
 
     AlertDialog(
         onDismissRequest = onClose,
@@ -423,15 +431,36 @@ private fun SettingsDialog(
                     color = Muted, fontSize = 11.sp,
                 )
                 Spacer(Modifier.height(14.dp))
-                Text("WIDGET", color = Muted, fontSize = 12.sp)
+                Text("WIDGET · COLOR", color = Muted, fontSize = 12.sp)
                 Row(
-                    Modifier.fillMaxWidth().padding(top = 6.dp),
+                    Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("Fondo transparente", color = TextCol)
-                    Switch(checked = state.widgetTransparent, onCheckedChange = onWidgetTransparent)
+                    WidgetPalette.COLORS.forEach { (_, hex) ->
+                        val selected = state.widgetColor.equals(hex, ignoreCase = true)
+                        Box(
+                            Modifier
+                                .size(if (selected) 34.dp else 28.dp)
+                                .background(Color(android.graphics.Color.parseColor(hex)), CircleShape)
+                                .border(
+                                    width = if (selected) 2.dp else 1.dp,
+                                    color = if (selected) Teal else Line,
+                                    shape = CircleShape,
+                                )
+                                .clickable { onWidgetColor(hex) },
+                        )
+                    }
                 }
+                Spacer(Modifier.height(14.dp))
+                Text("Transparencia: ${transparency}%", color = Muted, fontSize = 12.sp)
+                Slider(
+                    value = transparency.toFloat(),
+                    onValueChange = { transparency = it.roundToInt() },
+                    onValueChangeFinished = { onWidgetOpacity(100 - transparency) },
+                    valueRange = 0f..100f,
+                )
+                Text("0 = fondo sólido · 100 = invisible", color = Color(0xFF6B7A97), fontSize = 10.sp)
             }
         },
     )
