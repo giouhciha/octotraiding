@@ -121,14 +121,20 @@ Resultado: `android/app/build/outputs/apk/debug/app-debug.apk`
 Como todo corre en el teléfono, Android puede **retrasar** las tareas de fondo
 para ahorrar batería. Mitigaciones incluidas y recomendadas:
 
-- **WorkManager** revisa cada hora (mínimo del sistema).
+- **Alarma exacta** (`AlarmManager.setExactAndAllowWhileIdle`) cada hora a los
+  ~2 minutos. Es el disparador principal.
+- **WorkManager** periódico (cada hora) como respaldo.
 - Al abrir la app, se ejecuta un ciclo inmediato.
-- **Excluir de la optimización de batería** (paso 6.4) mejora mucho la puntualidad.
-- Si el teléfono está apagado o sin internet, no hay revisión en ese momento.
+- **Exclusión de optimización de batería**: se pide la primera vez y hay un botón
+  en **Ajustes → "Mejorar fiabilidad de avisos"**.
+- Reprogramación al **reiniciar** el teléfono (`BootReceiver`).
 
-Si en el uso real los avisos llegan tarde, la solución definitiva es mover el
-análisis a un **servidor + notificaciones push (FCM)** (Opción B). Todo el motor
-ya está listo para reutilizarse.
+> Aun así, si el teléfono está apagado, en modo avión o sin internet, no hay
+> revisión en ese rato. Y algunos fabricantes muy agresivos pueden limitarlo:
+> si notas retrasos, revisa que la app tenga permiso de "inicio automático".
+>
+> La solución 100% garantizada es mover el análisis a un **servidor + push (FCM)**.
+> Todo el motor ya está listo para reutilizarse.
 
 ---
 

@@ -10,11 +10,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.octotraiding.app.data.Assets
 import com.octotraiding.app.engine.Config
+import com.octotraiding.app.power.PowerSetup
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -59,17 +61,23 @@ fun OctoApp(vm: AppViewModel) {
     val state = vm.state
     var showChange by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     MaterialTheme(colorScheme = DarkColors) {
         Box(Modifier.fillMaxSize().background(Bg)) {
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
-                item { TopBar(state) }
-                item { HeroCard(state, onBuy = { vm.buy() }, onSell = { vm.sell() }) }
-                if (state.holding || state.detail?.signal?.contains("COMPRA") == true) {
-                    item { LevelsCard(state) }
+            Column(Modifier.fillMaxSize()) {
+                TopBar(state)
+                LazyColumn(
+                    Modifier.weight(1f),
+                    contentPadding = PaddingValues(bottom = 104.dp),
+                ) {
+                    item { HeroCard(state, onBuy = { vm.buy() }, onSell = { vm.sell() }) }
+                    if (state.holding || state.detail?.signal?.contains("COMPRA") == true) {
+                        item { LevelsCard(state) }
+                    }
+                    item { HistoryCard(state) }
+                    item { EventsCard(state) }
                 }
-                item { HistoryCard(state) }
-                item { EventsCard(state) }
             }
 
             BottomBar(
@@ -79,7 +87,7 @@ fun OctoApp(vm: AppViewModel) {
             )
 
             state.message?.let {
-                Toast(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 88.dp))
+                Toast(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 104.dp))
                 LaunchedEffect(it) {
                     kotlinx.coroutines.delay(2600)
                     vm.clearMessage()
@@ -91,9 +99,15 @@ fun OctoApp(vm: AppViewModel) {
             ChangeDialog(onPick = { symbol -> vm.selectAsset(symbol); showChange = false }, onClose = { showChange = false })
         }
         if (showSettings) {
-            SettingsDialog(state, onSave = { c, r, qs, qe, in2 ->
-                vm.saveSettings(c, r, qs, qe, in2); showSettings = false
-            }, onClose = { showSettings = false })
+            SettingsDialog(
+                state,
+                onSave = { c, r, qs, qe, in2 -> vm.saveSettings(c, r, qs, qe, in2); showSettings = false },
+                onReliability = {
+                    PowerSetup.requestExactAlarm(context)
+                    PowerSetup.requestBatteryExemption(context)
+                },
+                onClose = { showSettings = false },
+            )
         }
     }
 }
@@ -101,7 +115,7 @@ fun OctoApp(vm: AppViewModel) {
 @Composable
 private fun TopBar(state: AppState) {
     Row(
-        Modifier.fillMaxWidth().background(Color(0xE60B1220)).padding(16.dp),
+        Modifier.fillMaxWidth().statusBarsPadding().background(Color(0xE60B1220)).padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -285,7 +299,7 @@ private fun Chip(text: String) {
 @Composable
 private fun BottomBar(modifier: Modifier, onChange: () -> Unit, onSettings: () -> Unit) {
     Row(
-        modifier.fillMaxWidth().background(Color(0xF20B1220)).padding(12.dp),
+        modifier.fillMaxWidth().navigationBarsPadding().background(Color(0xF20B1220)).padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Button(onClick = onChange, modifier = Modifier.weight(1f),
@@ -342,6 +356,7 @@ private fun ChangeDialog(onPick: (String) -> Unit, onClose: () -> Unit) {
 private fun SettingsDialog(
     state: AppState,
     onSave: (Double, Double, Int, Int, String) -> Unit,
+    onReliability: () -> Unit,
     onClose: () -> Unit,
 ) {
     var capital by remember { mutableStateOf(state.capital.toInt().toString()) }
@@ -383,6 +398,14 @@ private fun SettingsDialog(
                         Text(label, color = TextCol)
                     }
                 }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick = onReliability, modifier = Modifier.fillMaxWidth()) {
+                    Text("Mejorar fiabilidad de avisos")
+                }
+                Text(
+                    "Permite alarmas exactas y quitar la optimización de batería, para que los avisos lleguen a tiempo.",
+                    color = Muted, fontSize = 11.sp,
+                )
             }
         },
     )

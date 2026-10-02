@@ -2,6 +2,8 @@ package com.octotraiding.app.work
 
 import android.content.Context
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
@@ -32,6 +34,16 @@ class MonitorWorker(appContext: Context, params: WorkerParameters) : Worker(appC
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 NAME,
                 ExistingPeriodicWorkPolicy.UPDATE,
+                request,
+            )
+        }
+
+        /** Ejecuta el chequeo ahora (lo usa la alarma exacta). */
+        fun runNow(context: Context) {
+            val request = OneTimeWorkRequestBuilder<MonitorWorker>().build()
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "octo-now",
+                ExistingWorkPolicy.REPLACE,
                 request,
             )
         }
