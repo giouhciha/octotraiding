@@ -9,6 +9,9 @@ __pycache__/
 # Datos descargados (se regeneran)
 data_cache/
 
+# Datos locales de la app (base de datos, claves VAPID)
+data/
+
 # Resultados de backtest
 backtest/out/
 

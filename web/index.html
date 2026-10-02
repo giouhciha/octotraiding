@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B1220" />
+  <title>OctoTrading</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="/icons/icon-192.png" alt="OctoTrading" class="logo" />
+      <div>
+        <div class="brand-name">OctoTrading</div>
+        <div class="brand-sub">tu analista en el bolsillo</div>
+      </div>
+    </div>
+    <button id="btn-notify" class="ghost" title="Activar notificaciones">🔔 Avisos</button>
+  </header>
+
+  <main>
+    <section class="card hero" id="hero">
+      <div class="hero-top">
+        <div>
+          <div class="symbol" id="hero-symbol">—</div>
+          <div class="asset-name" id="hero-name"></div>
+        </div>
+        <span class="badge" id="hero-badge">cargando…</span>
+      </div>
+      <div class="price" id="hero-price">—</div>
+      <div class="score-line">
+        <span>Puntuación del método</span>
+        <span id="hero-score" class="mono">—</span>
+      </div>
+      <div class="score-bar"><div class="score-fill" id="score-fill" style="width:50%"></div></div>
+      <p class="narrative" id="hero-narrative">Cargando el último análisis…</p>
+      <div class="chips" id="hero-chips"></div>
+    </section>
+
+    <section class="card levels" id="levels-card">
+      <h2>Si decides entrar</h2>
+      <div class="grid4">
+        <div class="metric"><span class="metric-label">Entrada</span><span class="metric-value mono" id="lv-entry">—</span></div>
+        <div class="metric"><span class="metric-label">Stop (salir si falla)</span><span class="metric-value mono neg" id="lv-stop">—</span></div>
+        <div class="metric"><span class="metric-label">Objetivo</span><span class="metric-value mono pos" id="lv-target">—</span></div>
+        <div class="metric"><span class="metric-label">Riesgo/Benef.</span><span class="metric-value mono" id="lv-rr">—</span></div>
+      </div>
+      <div class="position-line" id="lv-position"></div>
+      <div class="disclaimer">Análisis técnico automatizado. No es asesoramiento financiero.</div>
+    </section>
+
+    <section class="card">
+      <h2>Historial reciente</h2>
+      <ul class="list" id="history"><li class="muted">Cargando…</li></ul>
+    </section>
+
+    <section class="card">
+      <h2>Alertas</h2>
+      <ul class="list" id="events"><li class="muted">Sin alertas todavía.</li></ul>
+    </section>
+  </main>
+
+  <nav class="bottombar">
+    <button id="btn-change" class="primary">Cambiar activo</button>
+    <button id="btn-settings" class="secondary">Ajustes</button>
+  </nav>
+
+  <!-- Diálogo: cambiar activo -->
+  <dialog id="dlg-change">
+    <div class="dialog-head">
+      <h3>Elegir activo</h3>
+      <button class="icon-btn" data-close>✕</button>
+    </div>
+    <input id="search" type="search" placeholder="Buscar (BTC, solana, eth…)" autocomplete="off" />
+    <ul class="list selectable" id="asset-list"></ul>
+  </dialog>
+
+  <!-- Diálogo: ajustes -->
+  <dialog id="dlg-settings">
+    <div class="dialog-head">
+      <h3>Ajustes</h3>
+      <button class="icon-btn" data-close>✕</button>
+    </div>
+    <label>Capital de referencia (USD)
+      <input id="set-capital" type="number" min="0" step="100" inputmode="numeric" />
+    </label>
+    <label>Riesgo por operación (%)
+      <input id="set-risk" type="number" min="0.1" max="10" step="0.1" inputmode="decimal" />
+    </label>
+    <label>Temporalidad
+      <select id="set-interval"></select>
+    </label>
+    <div class="two">
+      <label>Silencio desde (hora)
+        <input id="set-qstart" type="number" min="0" max="23" step="1" inputmode="numeric" />
+      </label>
+      <label>hasta (hora)
+        <input id="set-qend" type="number" min="0" max="23" step="1" inputmode="numeric" />
+      </label>
+    </div>
+    <button id="btn-save-settings" class="primary wide">Guardar</button>
+    <button id="btn-test-push" class="secondary wide">Probar notificación</button>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

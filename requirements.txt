@@ -1,4 +1,17 @@
-# Dependencias del motor de análisis y backtesting (fase 1)
+# Dependencias — motor, backtesting y servidor (PWA)
 pandas>=2.2
 numpy>=1.26
 requests>=2.31
+
+# Servidor / API
+fastapi>=0.110
+uvicorn[standard]>=0.29
+apscheduler>=3.10
+pydantic>=2.6
+
+# Notificaciones push web
+pywebpush>=2.0
+py-vapid>=1.9
+
+# Generación de íconos
+pillow>=10.0

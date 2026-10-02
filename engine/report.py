@@ -117,19 +117,9 @@ def _build_narrative(row: pd.Series, symbol: str) -> str:
     return " ".join(parts)
 
 
-def latest_report(
-    symbol: str = "BTCUSDT",
-    interval: str = "1h",
-    cfg: EngineConfig = DEFAULT_CONFIG,
-    limit: int = 2000,
-) -> Report:
-    data = fetch_ohlcv(symbol, interval, limit=limit)
-    features = build_features(data, cfg)
-    scored = score_market(features, cfg)
-    row = scored.iloc[-1]
-
+def report_from_row(symbol: str, row: pd.Series) -> Report:
+    """Construye un Report a partir de una fila ya calculada por el motor."""
     daily = "alcista" if row["htf_ctx"] > 0 else ("bajista" if row["htf_ctx"] < 0 else "neutra")
-
     return Report(
         symbol=symbol,
         time_utc=str(row.name),
@@ -147,6 +137,18 @@ def latest_report(
         narrative=_build_narrative(row, symbol),
         reasons=_explain_factors(row),
     )
+
+
+def latest_report(
+    symbol: str = "BTCUSDT",
+    interval: str = "1h",
+    cfg: EngineConfig = DEFAULT_CONFIG,
+    limit: int = 2000,
+) -> Report:
+    data = fetch_ohlcv(symbol, interval, limit=limit)
+    features = build_features(data, cfg)
+    scored = score_market(features, cfg)
+    return report_from_row(symbol, scored.iloc[-1])
 
 
 if __name__ == "__main__":
