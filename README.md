@@ -9,18 +9,18 @@ o vender.
 
 ## Estado actual
 
-**Fase 1 y 2 completadas** (motor validado) + **Fase 3 en marcha: la app PWA
-funciona en local.**
+**Fases 1-2** (motor validado) + **Fase 3**: app **nativa Android** que hace todo
+en el teléfono (sin servidor).
 
 - Motor de análisis validado con backtesting, validación cruzada y walk-forward.
 - Política de operación compartida entre backtest y app (`engine/policy.py`).
-- **Servidor** (`server/`): API + job horario + notificaciones push (VAPID).
-- **App PWA** (`web/`): interfaz móvil, cambiar activo, ajustes, historial,
-  alertas e ícono propio. Instalable en Android.
-- Pendiente: **desplegar en la nube (HTTPS)** para usarla en el teléfono.
+- **App Android nativa** (Kotlin + Compose) con el motor **portado y verificado**
+  contra Python; descarga datos de Binance, analiza cada hora y notifica.
+  Genera `octotraiding-debug.apk`.
+- (Alternativa web PWA en `server/` + `web/`, por si se retoma.)
 
-Resultados: ver [`docs/BACKTEST_RESULTS.md`](docs/BACKTEST_RESULTS.md).
-App: ver [`docs/APP_PWA.md`](docs/APP_PWA.md).
+Docs: [motor](docs/MOTOR_ANALISIS.md) · [resultados](docs/BACKTEST_RESULTS.md) ·
+[app nativa](docs/APP_NATIVA.md) · [PWA](docs/APP_PWA.md).
 
 ## Documentación
 
@@ -33,28 +33,20 @@ App: ver [`docs/APP_PWA.md`](docs/APP_PWA.md).
 ## Estructura del código
 
 ```
-engine/            Motor de análisis
-  config.py        Parámetros (pesos, umbrales, riesgo, política) en un solo lugar
-  data.py          Descarga de velas desde Binance
-  indicators.py    Indicadores técnicos
-  features.py      Features + régimen + contexto diario
-  model.py         Score, señal y niveles de riesgo
-  policy.py        Política de operación (entrada, stop dinámico, salida)
-  report.py        Reporte para el usuario (lenguaje llano)
-server/            Servidor (API + job horario + notificaciones)
-  app.py           FastAPI (sirve la app y la API)
-  job.py           Ciclo de análisis horario
-  storage.py       Base de datos local (SQLite)
-  push.py          Notificaciones Web Push (VAPID)
-  assets.py        Catálogo de activos
-web/               App PWA (interfaz móvil)
+engine/            Motor de análisis (Python, referencia validada)
+server/  web/      App web PWA (alternativa; requiere backend)
+android/           App Android NATIVA (Kotlin + Compose, todo en el teléfono)
+  app/src/main/java/com/octotraiding/app/
+    engine/        Motor portado a Kotlin
+    data/          Binance API + almacenamiento local
+    logic/         Ciclo horario + acciones
+    notif/ work/   Notificaciones y job periódico
+    ui/            Interfaz (Compose)
 backtest/          Simulador histórico
-scripts/make_icons.py  Genera el ícono
-run_backtest.py    Informe de backtest de un activo
-validate.py        Validación cruzada (activos x temporalidades)
-walk_forward.py    Consistencia por tramos de tiempo
-experiments.py     Comparación de variantes (laboratorio)
-run_server.py      Arranca la app + servidor
+scripts/make_icons.py           Genera el ícono
+scripts/make_engine_fixture.py  Fixture para verificar el motor Kotlin
+run_backtest.py · validate.py · walk_forward.py · experiments.py
+run_server.py      Arranca la app web (alternativa)
 ```
 
 ## Cómo ejecutarlo
@@ -78,14 +70,19 @@ python -m venv .venv
 # 5) Comparar variantes del motor
 .\.venv\Scripts\python.exe experiments.py
 
-# 6) Levantar la app + servidor (PWA)
-.\.venv\Scripts\python.exe run_server.py
-#   abrir http://127.0.0.1:8000
+# 6) Compilar la app Android nativa (APK)
+$env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
+$env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
+& "$env:USERPROFILE\.gradle\wrapper\dists\gradle-8.13-bin\5xuhj0ry160q40clulazy9h7d\gradle-8.13\bin\gradle.bat" -p android assembleDebug
+#   resultado: android/app/build/outputs/apk/debug/app-debug.apk
+
+# (Alternativa web PWA)
+.\.venv\Scripts\python.exe run_server.py   # http://127.0.0.1:8000
 ```
 
 ## Próximos pasos
 
-1. Desplegar en la nube (AWS) con HTTPS para usar la app en el teléfono.
-2. Reporte con IA (LLM) sobre el JSON estructurado.
-3. Activar notificaciones push reales en el dispositivo.
-4. Publicación y disclaimers legales.
+1. Instalar el APK en el teléfono y probarlo.
+2. (Opcional) Gráfica de precio y mejoras de interfaz.
+3. (Opcional) Servidor + FCM si se necesita máxima fiabilidad de avisos.
+4. (Opcional) Firma de release y publicación.

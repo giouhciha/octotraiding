@@ -12,6 +12,14 @@ data_cache/
 # Datos locales de la app (base de datos, claves VAPID)
 data/
 
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.apk
+.cxx/
+
 # Resultados de backtest
 backtest/out/
 
