@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.*
@@ -69,6 +70,7 @@ fun OctoApp(vm: AppViewModel) {
     val state = vm.state
     var showChange by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showGuide by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     MaterialTheme(colorScheme = DarkColors) {
@@ -78,6 +80,7 @@ fun OctoApp(vm: AppViewModel) {
                     state,
                     onChange = { showChange = true },
                     onSettings = { showSettings = true },
+                    onGuide = { showGuide = true },
                 )
                 LazyColumn(
                     Modifier.weight(1f),
@@ -110,6 +113,17 @@ fun OctoApp(vm: AppViewModel) {
             }
         }
 
+        if (showGuide) {
+            Box(Modifier.fillMaxSize().background(Bg)) {
+                GuideScreen(
+                    score = state.detail?.score,
+                    action = state.action,
+                    hint = state.hint,
+                    onBack = { showGuide = false },
+                )
+            }
+        }
+
         if (showChange) {
             ChangeDialog(onPick = { symbol -> vm.selectAsset(symbol); showChange = false }, onClose = { showChange = false })
         }
@@ -131,7 +145,7 @@ fun OctoApp(vm: AppViewModel) {
 }
 
 @Composable
-private fun TopBar(state: AppState, onChange: () -> Unit, onSettings: () -> Unit) {
+private fun TopBar(state: AppState, onChange: () -> Unit, onSettings: () -> Unit, onGuide: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().statusBarsPadding().background(Color(0xE60B1220))
             .padding(start = 16.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
@@ -144,6 +158,9 @@ private fun TopBar(state: AppState, onChange: () -> Unit, onSettings: () -> Unit
         if (state.busy) {
             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Teal)
             Spacer(Modifier.width(6.dp))
+        }
+        IconButton(onClick = onGuide) {
+            Icon(Icons.Default.Info, contentDescription = "Cómo leer las señales", tint = Teal)
         }
         IconButton(onClick = onChange) {
             Icon(Icons.Default.SwapHoriz, contentDescription = "Cambiar activo", tint = Teal)
