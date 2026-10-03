@@ -289,7 +289,7 @@ private fun HistoryCard(state: AppState) {
         if (state.reports.isEmpty()) {
             Text("Sin historial todavía.", color = Muted, fontSize = 13.sp)
         } else {
-            state.reports.take(20).forEach { r ->
+            state.reports.take(10).forEach { r ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
                         Text(signalPlain(r.signal), color = TextCol, fontSize = 14.sp)
@@ -314,7 +314,7 @@ private fun EventsCard(state: AppState) {
         if (state.events.isEmpty()) {
             Text("Sin alertas todavía.", color = Muted, fontSize = 13.sp)
         } else {
-            state.events.take(20).forEach { e ->
+            state.events.take(10).forEach { e ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(e.message, color = TextCol, fontSize = 13.sp, modifier = Modifier.weight(1f))
                     Spacer(Modifier.width(8.dp))
