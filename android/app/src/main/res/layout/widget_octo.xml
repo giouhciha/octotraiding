@@ -70,22 +70,13 @@
             android:shadowRadius="4"
             android:text="Sin datos" />
 
-        <TextView
-            android:id="@+id/widget_hint"
+        <ImageView
+            android:id="@+id/widget_thermo"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:textSize="11sp"
-            android:autoSizeTextType="uniform"
-            android:autoSizeMinTextSize="10sp"
-            android:autoSizeMaxTextSize="13sp"
-            android:paddingTop="2dp"
-            android:textColor="#C7D2E3"
-            android:shadowColor="#CC000000"
-            android:shadowDx="0"
-            android:shadowDy="1"
-            android:shadowRadius="4"
-            android:text="Abre la app para analizar" />
+            android:layout_height="16dp"
+            android:layout_marginTop="6dp"
+            android:scaleType="fitXY"
+            android:contentDescription="@null" />
 
     </LinearLayout>
 
