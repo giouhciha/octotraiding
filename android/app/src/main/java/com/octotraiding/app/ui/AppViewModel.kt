@@ -41,6 +41,7 @@ data class AppState(
     val candles: List<Candle> = emptyList(),
     val widgetColor: String = "#121B2E",
     val widgetOpacity: Int = 100,
+    val notifyModerate: Boolean = false,
     val busy: Boolean = false,
     val message: String? = null,
 )
@@ -102,6 +103,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         val widgetColor = withContext(Dispatchers.IO) { Store.widgetColor(app) }
         val widgetOpacity = withContext(Dispatchers.IO) { Store.widgetOpacity(app) }
+        val notifyModerate = withContext(Dispatchers.IO) { Store.notifyModerate(app) }
         val (action, hint) = Actions.compute(detail, position)
         state = state.copy(
             symbol = settings.symbol,
@@ -122,6 +124,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             candles = candles,
             widgetColor = widgetColor,
             widgetOpacity = widgetOpacity,
+            notifyModerate = notifyModerate,
         )
     }
 
@@ -205,6 +208,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 OctoWidgetProvider.refresh(app)
             }
             load()
+        }
+    }
+
+    fun setNotifyModerate(value: Boolean) {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            withContext(Dispatchers.IO) { Store.setNotifyModerate(app, value) }
+            load()
+            state = state.copy(
+                message = if (value) "Te avisaré también en señales moderadas." else "Avisos solo en señales fuertes.",
+            )
         }
     }
 

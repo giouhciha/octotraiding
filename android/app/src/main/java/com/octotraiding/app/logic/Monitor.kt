@@ -89,10 +89,15 @@ object Monitor {
             val prev = closed[idx - 1]
 
             if (position == null) {
-                val isNewBuy = row.signal == Config.COMPRA_FUERTE &&
-                    prev.signal != Config.COMPRA_FUERTE && row.htfCtx >= 0
-                if (isNewBuy) {
-                    val msg = "Momento de comprar ${settings.symbol}: entrada $${fmt(row.close)} · " +
+                val isBuy = { s: String -> s == Config.COMPRA || s == Config.COMPRA_FUERTE }
+                val strongBuy = row.signal == Config.COMPRA_FUERTE && prev.signal != Config.COMPRA_FUERTE
+                val moderateBuy = Store.notifyModerate(context) &&
+                    row.signal == Config.COMPRA && !isBuy(prev.signal)
+                val shouldAlert = (strongBuy || moderateBuy) && row.htfCtx >= 0
+                if (shouldAlert) {
+                    val moderada = row.signal == Config.COMPRA
+                    val msg = (if (moderada) "Señal moderada. " else "") +
+                        "Momento de comprar ${settings.symbol}: entrada $${fmt(row.close)} · " +
                         "stop $${fmt(row.stop)} · objetivo $${fmt(row.target)}"
                     Store.addEvent(context, EventItem(row.time, "OPEN", msg))
                     if (allowNotify && shouldNotify(row.time, settings.quietStart, settings.quietEnd)) {

@@ -123,6 +123,7 @@ fun OctoApp(vm: AppViewModel) {
                 },
                 onWidgetColor = { vm.setWidgetColor(it) },
                 onWidgetOpacity = { vm.setWidgetOpacity(it) },
+                onNotifyModerate = { vm.setNotifyModerate(it) },
                 onClose = { showSettings = false },
             )
         }
@@ -380,6 +381,7 @@ private fun SettingsDialog(
     onReliability: () -> Unit,
     onWidgetColor: (String) -> Unit,
     onWidgetOpacity: (Int) -> Unit,
+    onNotifyModerate: (Boolean) -> Unit,
     onClose: () -> Unit,
 ) {
     var capital by remember { mutableStateOf(state.capital.toInt().toString()) }
@@ -461,6 +463,18 @@ private fun SettingsDialog(
                     valueRange = 0f..100f,
                 )
                 Text("0 = fondo sólido · 100 = invisible", color = Color(0xFF6B7A97), fontSize = 10.sp)
+                Spacer(Modifier.height(14.dp))
+                Text("AVISOS", color = Muted, fontSize = 12.sp)
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Avisar también en señales moderadas",
+                        color = TextCol, fontSize = 13.sp, modifier = Modifier.weight(1f),
+                    )
+                    Switch(checked = state.notifyModerate, onCheckedChange = onNotifyModerate)
+                }
             }
         },
     )
